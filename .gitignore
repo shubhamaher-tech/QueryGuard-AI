@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+*/node_modules/
+frontend/dist/
+frontend_nextjs_backup/
+
+# Next.js & Build Artifacts
+.next/
+*/.next/
+dist/
+build/
+
+# Python & Environment
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Database & Runtime Data
+backend/artifacts/plan_graph_dataset/
+backend/artifacts/models/
+backend/queryguard.db
+*.sqlite
+*.sqlite3
+
+# Environment & OS Files
+.env
+.env.local
+.env.*.local
+.DS_Store
+Thumbs.db
+*.log
+
+# TPC-H Raw and Generated Artifacts (Local Sandbox Only)
+database/workload/tpch/tools/
+database/workload/tpch/raw/
+database/workload/tpch/processed/
+database/workload/tpch/logs/

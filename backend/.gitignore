@@ -1,0 +1,8 @@
+# QueryGuard AI Artifacts & Caches
+artifacts/plan_graph_dataset/
+artifacts/models/
+__pycache__/
+*.pyc
+.pytest_cache/
+queryguard.db
+.env
