@@ -33,16 +33,26 @@ import { LiveWorkloadView } from './components/LiveWorkloadView';
 import { BenchmarkDatasetsView } from './components/BenchmarkDatasetsView';
 import { ModelInsightsView } from './components/ModelInsightsView';
 import { SimulationsShowcaseView } from './components/SimulationsShowcaseView';
+import { Login } from './Login';
 
 import { api } from './lib/api';
 
 export function App() {
+  const [currentUser, setCurrentUser] = useState<User>(() => {
+    try {
+      const saved = localStorage.getItem('queryguard_user');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_USERS[0];
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem('queryguard_auth') === 'true';
+  });
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [selectedQueryId, setSelectedQueryId] = useState<string | null>(null);
   const [selectedRecommendationId, setSelectedRecommendationId] = useState<string | null>(null);
 
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
-  const [currentUser, setCurrentUser] = useState<User>(INITIAL_USERS[0]); // Default: Priya Sharma (DBA)
   const [dataSource, setDataSource] = useState<DataSource>(INITIAL_DATA_SOURCE);
   const [queries, setQueries] = useState<QueryEvent[]>(INITIAL_QUERIES);
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>(INITIAL_AUDIT_LOGS);
@@ -79,7 +89,10 @@ export function App() {
         if (!isMounted) return;
         if (loadedUsers && loadedUsers.length > 0) {
           setUsers(loadedUsers);
-          setCurrentUser(prev => loadedUsers.find(u => u.id === prev.id) || loadedUsers[0]);
+          setCurrentUser(prev => {
+            const matched = loadedUsers.find(u => u.id === prev.id || (u.employee_id && u.employee_id === prev.employee_id) || (u.email && u.email === prev.email));
+            return matched || prev;
+          });
         }
         if (loadedQueries && loadedQueries.length > 0) {
           setQueries(loadedQueries);
@@ -286,6 +299,19 @@ export function App() {
   const activeQuery = queries.find(q => q.id === selectedQueryId);
   const activeRecommendation = allRecommendations.find(r => r.id === selectedRecommendationId);
 
+  if (!isAuthenticated) {
+    return (
+      <Login
+        onLogin={(authedUser: User) => {
+          localStorage.setItem('queryguard_auth', 'true');
+          localStorage.setItem('queryguard_user', JSON.stringify(authedUser));
+          setCurrentUser(authedUser);
+          setIsAuthenticated(true);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="app-layout">
       {/* Sidebar + Topbar */}
@@ -298,14 +324,75 @@ export function App() {
         }}
         currentUser={currentUser}
         users={users}
-        onChangeUser={setCurrentUser}
+        onChangeUser={(u) => {
+          setCurrentUser(u);
+          localStorage.setItem('queryguard_user', JSON.stringify(u));
+        }}
         dataSource={dataSource}
         onResetDemo={handleResetDemo}
         onOpenPrivacyModal={() => setCurrentTab('privacy')}
+        onLogout={() => {
+          localStorage.removeItem('queryguard_auth');
+          localStorage.removeItem('queryguard_user');
+          setIsAuthenticated(false);
+        }}
       >
         {/* Main Viewport */}
         <main className="main-viewport">
           <div className="content-canvas">
+            {/* Enterprise Role-Based Access Control (RBAC) Hierarchy Status Strip */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 12,
+              padding: '10px 16px',
+              marginBottom: 16,
+              borderRadius: 'var(--radius-md)',
+              border: `1px solid ${
+                currentUser.role === 'DBA' ? '#99F6E4' : currentUser.role === 'ENGINEER' ? '#BFDBFE' : '#E2E8F0'
+              }`,
+              backgroundColor: currentUser.role === 'DBA' ? '#F0FDFA' : currentUser.role === 'ENGINEER' ? '#EFF6FF' : '#F8FAFC',
+              fontSize: 12
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '3px 10px',
+                  borderRadius: 9999,
+                  fontWeight: 700,
+                  fontSize: 11,
+                  letterSpacing: '0.04em',
+                  backgroundColor: currentUser.role === 'DBA' ? '#0F766E' : currentUser.role === 'ENGINEER' ? '#1D4ED8' : '#475569',
+                  color: '#FFFFFF'
+                }}>
+                  {currentUser.role === 'DBA' ? 'LEVEL 3 SUPERUSER' : currentUser.role === 'ENGINEER' ? 'LEVEL 2 ENGINEER' : 'LEVEL 1 AUDITOR'}
+                </span>
+                <span style={{ fontWeight: 600, color: '#0F172A' }}>
+                  {currentUser.name}
+                </span>
+                <span style={{ color: '#64748B', fontFamily: 'monospace', fontSize: 11 }}>
+                  [{currentUser.employee_id || (currentUser.role === 'DBA' ? 'EMP-DBA-01' : currentUser.role === 'ENGINEER' ? 'EMP-ENG-02' : 'EMP-AUD-03')}]
+                </span>
+                <span style={{ color: '#CBD5E1' }}>|</span>
+                <span style={{ color: '#475569' }}>
+                  {currentUser.department || (currentUser.role === 'DBA' ? 'Database Reliability & Architecture' : currentUser.role === 'ENGINEER' ? 'Platform & Application Engineering' : 'Security & Compliance Governance')}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748B' }}>
+                <span style={{ fontSize: 11, fontWeight: 500 }}>
+                  {currentUser.role === 'DBA' 
+                    ? '⚡ Full Authority: Production Index Approvals, GNN Retraining & HypoPG' 
+                    : currentUser.role === 'ENGINEER' 
+                      ? '🔧 Operational Access: Explain Plans & Virtual HypoPG (Approvals Route to DBA)' 
+                      : '🔒 Read-Only Compliance: Masked Telemetry & Audit Logs Only'}
+                </span>
+              </div>
+            </div>
+
             {/* Dashboard Home */}
             {currentTab === 'dashboard' && (
               <DashboardHome
@@ -479,6 +566,19 @@ export function App() {
                 onResetDemo={handleResetDemo}
                 onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
               />
+            )}
+
+            {/* Login / Auth View Tab */}
+            {currentTab === 'login' && (
+              <div style={{ margin: '-24px', minHeight: 'calc(100vh - 56px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Login 
+                  onLogin={() => {
+                    setCurrentTab('dashboard');
+                    setIsAuthenticated(true);
+                  }}
+                  onBackToDashboard={() => setCurrentTab('dashboard')}
+                />
+              </div>
             )}
           </div>
         </main>

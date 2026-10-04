@@ -2,9 +2,15 @@ export type UserRole = 'DBA' | 'ENGINEER' | 'VIEWER';
 
 export interface User {
   id: string;
+  employee_id?: string;
   name: string;
+  full_name?: string;
   role: UserRole;
   avatar: string;
+  email?: string;
+  hierarchy_level?: number;
+  department?: string;
+  permissions?: string[];
 }
 
 export type DataSourceMode = 'DEMO' | 'CONNECTED_POSTGRES';

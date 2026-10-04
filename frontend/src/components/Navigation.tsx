@@ -12,7 +12,9 @@ import {
   Terminal,
   Zap,
   Server,
-  Brain
+  Brain,
+  LogOut,
+  LogIn
 } from 'lucide-react';
 import type { User, DataSource } from '../types/queryguard';
 
@@ -25,6 +27,7 @@ interface NavigationProps {
   dataSource: DataSource;
   onResetDemo: () => void;
   onOpenPrivacyModal: () => void;
+  onLogout?: () => void;
   children?: React.ReactNode;
 }
 
@@ -37,6 +40,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   dataSource,
   onResetDemo,
   onOpenPrivacyModal,
+  onLogout,
   children
 }) => {
   const navItems = [
@@ -50,6 +54,7 @@ export const Navigation: React.FC<NavigationProps> = ({
     { id: 'audit', label: 'Audit Trail', icon: FileText },
     { id: 'benchmarks', label: 'Benchmark Data', icon: Server, badge: 'TPC-H' },
     { id: 'settings', label: 'Settings', icon: Lock },
+    { id: 'login', label: 'Login / Sign Up', icon: LogIn, badge: 'Auth' },
   ];
 
   return (
@@ -190,32 +195,64 @@ export const Navigation: React.FC<NavigationProps> = ({
             <span>Reset Demo</span>
           </button>
 
-          {/* User / Role Switcher */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, backgroundColor: '#FFFFFF', padding: '3px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)' }}>
-            <UserCheck size={14} style={{ color: 'var(--brand-primary-text)' }} />
-            <select
-              value={currentUser.id}
-              onChange={(e) => {
-                const found = users.find(u => u.id === e.target.value);
-                if (found) onChangeUser(found);
-              }}
-              style={{
-                backgroundColor: 'transparent',
-                border: 'none',
-                padding: '2px 4px',
-                fontSize: 12,
-                fontWeight: 600,
-                color: 'var(--text-primary)',
-                cursor: 'pointer'
-              }}
-            >
-              {users.map(u => (
-                <option key={u.id} value={u.id} style={{ backgroundColor: '#FFFFFF', color: '#1E293B' }}>
-                  {u.name} ({u.role})
-                </option>
-              ))}
-            </select>
+          {/* Authenticated Single User Session Badge (Locked to active session) */}
+          <div 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 8, 
+              backgroundColor: '#F8FAFC', 
+              padding: '4px 10px', 
+              borderRadius: 'var(--radius-sm)', 
+              border: '1px solid var(--border-default)' 
+            }}
+            title={`Active Session: ${currentUser.name} (${currentUser.department || 'QueryGuard'})`}
+          >
+            <div style={{
+              width: 22,
+              height: 22,
+              borderRadius: '50%',
+              backgroundColor: currentUser.role === 'DBA' ? '#0F766E' : currentUser.role === 'ENGINEER' ? '#1D4ED8' : '#475569',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 10,
+              fontWeight: 700
+            }}>
+              {currentUser.avatar || currentUser.name.slice(0, 2).toUpperCase()}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
+                {currentUser.name}
+              </span>
+              <span style={{ fontSize: 10, color: '#64748B', fontFamily: 'monospace' }}>
+                [{currentUser.employee_id || (currentUser.role === 'DBA' ? 'EMP-DBA-01' : currentUser.role === 'ENGINEER' ? 'EMP-ENG-02' : 'EMP-AUD-03')}]
+              </span>
+              <span style={{
+                fontSize: 10,
+                fontWeight: 700,
+                padding: '1px 6px',
+                borderRadius: 4,
+                backgroundColor: currentUser.role === 'DBA' ? 'rgba(15, 118, 110, 0.12)' : currentUser.role === 'ENGINEER' ? 'rgba(29, 78, 216, 0.12)' : 'rgba(71, 85, 105, 0.12)',
+                color: currentUser.role === 'DBA' ? '#0F766E' : currentUser.role === 'ENGINEER' ? '#1D4ED8' : '#475569'
+              }}>
+                L{currentUser.hierarchy_level || (currentUser.role === 'DBA' ? 3 : currentUser.role === 'ENGINEER' ? 2 : 1)} {currentUser.role}
+              </span>
+            </div>
           </div>
+
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="btn btn-secondary"
+              style={{ fontSize: 12, padding: '6px 10px', gap: 5 }}
+              title="Sign out to Login screen"
+            >
+              <LogOut size={13} />
+              <span>Log Out</span>
+            </button>
+          )}
         </div>
       </header>
 

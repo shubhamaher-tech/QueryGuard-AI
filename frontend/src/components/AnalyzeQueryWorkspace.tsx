@@ -1113,20 +1113,37 @@ export const AnalyzeQueryWorkspace: React.FC<AnalyzeQueryWorkspaceProps> = ({ cu
                         border: '1px solid var(--border-default)'
                       }}
                     />
+                    {currentUser.role !== 'DBA' && (
+                      <div style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#FEF3C7',
+                        border: '1px solid #FCD34D',
+                        borderRadius: 'var(--radius-sm)',
+                        fontSize: 11,
+                        color: '#92400E',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6
+                      }}>
+                        <span>Role Notice: Only Lead DBA (Level 3 - EMP-DBA-01) can record binding index approvals.</span>
+                      </div>
+                    )}
                     <button
                       onClick={handleApprove}
-                      disabled={isApproving}
+                      disabled={isApproving || currentUser.role !== 'DBA'}
                       className="btn btn-primary"
-                      style={{ fontSize: 12, padding: '8px 16px', gap: 6 }}
+                      title={currentUser.role !== 'DBA' ? "Binding approvals require Level 3 Lead DBA authority" : "Approve recommendation"}
+                      style={{ fontSize: 12, padding: '8px 16px', gap: 6, opacity: currentUser.role !== 'DBA' ? 0.55 : 1, cursor: currentUser.role !== 'DBA' ? 'not-allowed' : 'pointer' }}
                     >
                       <Check size={14} />
-                      <span>Approve Recommendation</span>
+                      <span>{currentUser.role === 'DBA' ? 'Approve Recommendation' : 'Requires DBA Approval'}</span>
                     </button>
                     <button
                       onClick={handleReject}
-                      disabled={isApproving}
+                      disabled={isApproving || currentUser.role !== 'DBA'}
                       className="btn btn-danger"
-                      style={{ fontSize: 12, padding: '8px 16px', gap: 6 }}
+                      title={currentUser.role !== 'DBA' ? "Binding rejections require Level 3 Lead DBA authority" : "Reject recommendation"}
+                      style={{ fontSize: 12, padding: '8px 16px', gap: 6, opacity: currentUser.role !== 'DBA' ? 0.55 : 1, cursor: currentUser.role !== 'DBA' ? 'not-allowed' : 'pointer' }}
                     >
                       <XCircle size={14} />
                       <span>Reject</span>

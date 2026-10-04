@@ -6,9 +6,59 @@ import {
 } from '../types/queryguard';
 
 export const INITIAL_USERS: User[] = [
-  { id: 'usr-1', name: 'Priya Sharma', role: 'DBA', avatar: 'PS' },
-  { id: 'usr-2', name: 'Arjun Patel', role: 'ENGINEER', avatar: 'AP' },
-  { id: 'usr-3', name: 'Alex Vance', role: 'VIEWER', avatar: 'AV' },
+  {
+    id: 'usr-1',
+    employee_id: 'EMP-DBA-01',
+    name: 'Priya Sharma',
+    full_name: 'Priya Sharma',
+    email: 'priya.sharma@queryguard.io',
+    role: 'DBA',
+    department: 'Database Reliability & Architecture',
+    hierarchy_level: 3,
+    avatar: 'PS',
+    permissions: [
+      'APPROVE_PRODUCTION_INDEX',
+      'REJECT_PRODUCTION_INDEX',
+      'SIMULATE_HYPOPG',
+      'RETRAIN_GNN_MODEL',
+      'FLUSH_TELEMETRY',
+      'EXPORT_SECURITY_AUDIT',
+      'MANAGE_SETTINGS'
+    ]
+  },
+  {
+    id: 'usr-2',
+    employee_id: 'EMP-ENG-02',
+    name: 'Arjun Patel',
+    full_name: 'Arjun Patel',
+    email: 'arjun.patel@queryguard.io',
+    role: 'ENGINEER',
+    department: 'Platform & Application Engineering',
+    hierarchy_level: 2,
+    avatar: 'AP',
+    permissions: [
+      'SIMULATE_HYPOPG',
+      'SUBMIT_INDEX_PROPOSAL',
+      'ANALYZE_EXPLAIN_PLAN',
+      'VIEW_SLOW_QUERIES'
+    ]
+  },
+  {
+    id: 'usr-3',
+    employee_id: 'EMP-AUD-03',
+    name: 'Alex Vance',
+    full_name: 'Alex Vance',
+    email: 'alex.vance@queryguard.io',
+    role: 'VIEWER',
+    department: 'Security & Compliance Governance',
+    hierarchy_level: 1,
+    avatar: 'AV',
+    permissions: [
+      'VIEW_AUDIT_LOGS',
+      'INSPECT_PRIVACY_MASKS',
+      'VIEW_TELEMETRY'
+    ]
+  },
 ];
 
 export const INITIAL_DATA_SOURCE: DataSource = {

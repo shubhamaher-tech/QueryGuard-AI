@@ -33,6 +33,33 @@ async function handleResponse<T>(res: Response, fallback: T): Promise<T> {
 export const api = {
   baseUrl: API_BASE_URL,
 
+  async loginUser(identifier: string, password: string): Promise<{ success: boolean; user?: User; token?: string; message?: string }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, message: data.detail || 'Authentication failed' };
+      }
+      return data;
+    } catch (err: any) {
+      return { success: false, message: err?.message || 'Server connection error' };
+    }
+  },
+
+  async fetchEmployeeDirectory(): Promise<any[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users/directory`);
+      if (res.ok) return await res.json();
+      return [];
+    } catch {
+      return [];
+    }
+  },
+
   async fetchUsers(fallback: User[] = []): Promise<User[]> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/users`);

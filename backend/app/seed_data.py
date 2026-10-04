@@ -16,10 +16,11 @@ from app.privacy import PRIVACY_STATEMENT
 
 
 def seed_database(db: Session):
-    # Check if already seeded
-    if db.query(User).first():
-        if not db.query(User).filter(User.id == "usr-1").first():
-            _seed_frontend_entities(db)
+    # Always ensure employee login accounts are seeded and updated in PostgreSQL
+    _seed_frontend_entities(db)
+    
+    # Check if general benchmark queries already seeded
+    if db.query(QueryEvent).first():
         return
 
     now = datetime.datetime.utcnow()
@@ -546,15 +547,57 @@ def seed_database(db: Session):
 def _seed_frontend_entities(db: Session):
     now = datetime.datetime.utcnow()
 
-    # Users
-    new_users = [
-        User(id="usr-1", username="Priya Sharma", role="DBA", created_at=now - datetime.timedelta(days=30)),
-        User(id="usr-2", username="Arjun Patel", role="ENGINEER", created_at=now - datetime.timedelta(days=20)),
-        User(id="usr-3", username="Alex Vance", role="VIEWER", created_at=now - datetime.timedelta(days=10)),
+    # Employees & Role Hierarchy (Stored in PostgreSQL Database)
+    import hashlib
+
+    employees = [
+        {
+            "id": "usr-1",
+            "employee_id": "EMP-DBA-01",
+            "username": "priya.sharma",
+            "full_name": "Priya Sharma",
+            "email": "priya.sharma@queryguard.io",
+            "password_hash": hashlib.sha256(b"Dba@Guard2026!").hexdigest(),
+            "role": "DBA",
+            "hierarchy_level": 3,
+            "department": "Database Reliability & Architecture",
+            "avatar": "PS",
+            "is_active": True,
+        },
+        {
+            "id": "usr-2",
+            "employee_id": "EMP-ENG-02",
+            "username": "arjun.patel",
+            "full_name": "Arjun Patel",
+            "email": "arjun.patel@queryguard.io",
+            "password_hash": hashlib.sha256(b"Eng@Guard2026!").hexdigest(),
+            "role": "ENGINEER",
+            "hierarchy_level": 2,
+            "department": "Data Platform & Infrastructure",
+            "avatar": "AP",
+            "is_active": True,
+        },
+        {
+            "id": "usr-3",
+            "employee_id": "EMP-AUD-03",
+            "username": "alex.vance",
+            "full_name": "Alex Vance",
+            "email": "alex.vance@queryguard.io",
+            "password_hash": hashlib.sha256(b"Auditor@Guard2026!").hexdigest(),
+            "role": "VIEWER",
+            "hierarchy_level": 1,
+            "department": "Security & Compliance Governance",
+            "avatar": "AV",
+            "is_active": True,
+        },
     ]
-    for u in new_users:
-        if not db.query(User).filter(User.id == u.id).first():
-            db.add(u)
+    for emp_data in employees:
+        existing = db.query(User).filter((User.id == emp_data["id"]) | (User.employee_id == emp_data["employee_id"])).first()
+        if existing:
+            for k, v in emp_data.items():
+                setattr(existing, k, v)
+        else:
+            db.add(User(**emp_data))
     db.commit()
 
     # 1. qry-7c91

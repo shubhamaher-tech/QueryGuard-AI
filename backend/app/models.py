@@ -4,6 +4,7 @@ from sqlalchemy import (
     String,
     Float,
     Integer,
+    Boolean,
     DateTime,
     ForeignKey,
     Text,
@@ -18,8 +19,16 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(String(64), primary_key=True, index=True)
+    employee_id = Column(String(64), unique=True, nullable=True, index=True)
     username = Column(String(100), unique=True, nullable=False)
-    role = Column(String(50), default="DBA", nullable=False)  # DBA, ANALYST, AUDITOR
+    email = Column(String(120), unique=True, nullable=True, index=True)
+    password_hash = Column(String(255), nullable=True)
+    full_name = Column(String(120), nullable=True)
+    department = Column(String(100), nullable=True)
+    role = Column(String(50), default="DBA", nullable=False)  # DBA, ENGINEER, VIEWER
+    hierarchy_level = Column(Integer, default=1, nullable=False)  # 3: DBA (Admin), 2: ENGINEER, 1: VIEWER
+    avatar = Column(String(10), default="PS")
+    is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 
