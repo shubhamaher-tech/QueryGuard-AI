@@ -58,6 +58,7 @@ export const LiveWorkloadView: React.FC<LiveWorkloadViewProps> = ({ onNavigateTo
   const [isRunningSample, setIsRunningSample] = useState<boolean>(false);
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedBottleneck, setSelectedBottleneck] = useState<string | null>(null);
   const [copiedFp, setCopiedFp] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
 
@@ -123,11 +124,14 @@ export const LiveWorkloadView: React.FC<LiveWorkloadViewProps> = ({ onNavigateTo
     setTimeout(() => setCopiedFp(null), 2000);
   };
 
-  const filteredQueries = (metrics?.top_slow_queries || []).filter(q => 
-    q.query_fingerprint.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    q.masked_query.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (q.primary_bottleneck && q.primary_bottleneck.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredQueries = (metrics?.top_slow_queries || []).filter(q => {
+    const matchesSearch = 
+      q.query_fingerprint.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      q.masked_query.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (q.primary_bottleneck && q.primary_bottleneck.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesBottleneck = !selectedBottleneck || q.primary_bottleneck === selectedBottleneck;
+    return matchesSearch && matchesBottleneck;
+  });
 
   const getBottleneckBadge = (b?: string) => {
     const name = friendlyBottleneckName(b);
@@ -333,7 +337,7 @@ export const LiveWorkloadView: React.FC<LiveWorkloadViewProps> = ({ onNavigateTo
       {/* Latency Trend & Bottleneck Distribution */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16 }}>
         {/* Latency Trend Graph */}
-        <div className="card" style={{ padding: 20 }}>
+        <div className="card" style={{ padding: 20, overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -352,40 +356,67 @@ export const LiveWorkloadView: React.FC<LiveWorkloadViewProps> = ({ onNavigateTo
           <div style={{
             height: 180,
             width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
             display: 'flex',
             alignItems: 'flex-end',
-            gap: 6,
+            gap: 5,
             padding: '16px 12px 8px',
             backgroundColor: 'var(--bg-subtle)',
             borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border-default)'
+            border: '1px solid var(--border-default)',
+            overflow: 'hidden'
           }}>
             {metrics?.latency_trend && metrics.latency_trend.length > 0 ? (
-              metrics.latency_trend.map((point, idx) => {
-                const maxLat = Math.max(...metrics.latency_trend.map(p => p.latency_ms), 10);
-                const heightPct = Math.min(100, Math.max(12, (point.latency_ms / maxLat) * 100));
-                return (
-                  <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, height: '100%', justifyContent: 'flex-end' }}>
+              (() => {
+                const trendSlice = metrics.latency_trend.slice(-16);
+                const maxLat = Math.max(...trendSlice.map(p => p.latency_ms), 10);
+                return trendSlice.map((point, idx) => {
+                  const heightPct = Math.min(100, Math.max(12, (point.latency_ms / maxLat) * 100));
+                  return (
                     <div 
-                      title={`${point.timestamp}: ${point.latency_ms} ms (${point.calls_per_sec} qps)`}
-                      style={{
-                        width: '100%',
-                        height: `${heightPct}%`,
-                        borderRadius: '4px 4px 0 0',
-                        backgroundColor: point.latency_ms > 100 
-                          ? 'var(--danger-text)' 
-                          : point.latency_ms > 20 
-                            ? 'var(--warning-text)' 
-                            : 'var(--brand-primary)',
-                        transition: 'height 0.3s ease'
+                      key={idx} 
+                      style={{ 
+                        flex: '1 1 0px', 
+                        minWidth: 0, 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'center', 
+                        gap: 4, 
+                        height: '100%', 
+                        justifyContent: 'flex-end',
+                        overflow: 'hidden'
                       }}
-                    />
-                    <span style={{ fontSize: 9, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center' }}>
-                      {point.timestamp.slice(-5)}
-                    </span>
-                  </div>
-                );
-              })
+                    >
+                      <div 
+                        title={`${point.timestamp}: ${point.latency_ms} ms (${point.calls_per_sec} qps)`}
+                        style={{
+                          width: '100%',
+                          height: `${heightPct}%`,
+                          borderRadius: '3px 3px 0 0',
+                          backgroundColor: point.latency_ms > 100 
+                            ? 'var(--danger-text)' 
+                            : point.latency_ms > 45 
+                              ? 'var(--warning-text)' 
+                              : 'var(--brand-primary)',
+                          transition: 'height 0.3s ease'
+                        }}
+                      />
+                      <span style={{ 
+                        fontSize: 8, 
+                        color: 'var(--text-muted)', 
+                        overflow: 'hidden', 
+                        textOverflow: 'ellipsis', 
+                        whiteSpace: 'nowrap', 
+                        width: '100%', 
+                        textAlign: 'center' 
+                      }}>
+                        {point.timestamp.slice(-5)}
+                      </span>
+                    </div>
+                  );
+                });
+              })()
             ) : (
               <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--text-muted)' }}>
                 Waiting for telemetry samples... Click "Simulate Traffic" to begin.
@@ -395,28 +426,30 @@ export const LiveWorkloadView: React.FC<LiveWorkloadViewProps> = ({ onNavigateTo
         </div>
 
         {/* Bottleneck Distribution */}
-        <div className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', overflow: 'hidden' }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Layers size={16} style={{ color: 'var(--info-text)' }} />
-                <span>Main Problems Identified</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Layers size={16} style={{ color: 'var(--info-text)' }} />
+                  <span>Main Problems Identified</span>
+                </h3>
+                <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>
+                  Interactive categorization of slow execution patterns
+                </p>
               </div>
               <PieChart size={16} style={{ color: 'var(--brand-primary-text)' }} />
-            </h3>
-            <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>
-              Categorization of slow execution patterns
-            </p>
+            </div>
 
             {/* SVG Pie / Donut Chart */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 14, padding: '8px 0', borderBottom: '1px solid var(--border-default)', paddingBottom: 14 }}>
-              <div style={{ position: 'relative', width: 88, height: 88, flexShrink: 0 }}>
-                <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+              <div style={{ position: 'relative', width: 92, height: 92, flexShrink: 0 }}>
+                <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%' }}>
                   <path
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                     fill="none"
                     stroke="#E2E8F0"
-                    strokeWidth="4"
+                    strokeWidth="4.2"
                   />
                   {metrics?.bottleneck_distribution && (() => {
                     const entries = Object.entries(metrics.bottleneck_distribution);
@@ -426,6 +459,7 @@ export const LiveWorkloadView: React.FC<LiveWorkloadViewProps> = ({ onNavigateTo
                       const pct = Math.max(1, Math.round((count / total) * 100));
                       const offset = -acc;
                       acc += pct;
+                      const isSelected = selectedBottleneck === type;
                       const color = type === 'SEQ_SCAN' || type === 'LARGE_SEQ_SCAN' ? 'var(--danger-text)' :
                         type === 'UNINDEXED_JOIN' || type === 'REPEATED_INNER_LOOP' ? 'var(--warning-text)' :
                         type === 'EXPENSIVE_SORT' ? '#7C3AED' : 'var(--brand-primary)';
@@ -435,15 +469,23 @@ export const LiveWorkloadView: React.FC<LiveWorkloadViewProps> = ({ onNavigateTo
                           d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                           fill="none"
                           stroke={color}
-                          strokeWidth="4"
+                          strokeWidth={isSelected ? 5.8 : 4.2}
                           strokeDasharray={`${pct}, 100`}
                           strokeDashoffset={offset}
-                        />
+                          opacity={selectedBottleneck && !isSelected ? 0.45 : 1}
+                          style={{
+                            cursor: 'pointer',
+                            transition: 'stroke-dasharray 0.3s ease, stroke-width 0.2s ease, opacity 0.2s ease'
+                          }}
+                          onClick={() => setSelectedBottleneck(prev => prev === type ? null : type)}
+                        >
+                          <title>{`${friendlyBottleneckName(type)}: ${count} (${pct}%) - Click to filter`}</title>
+                        </path>
                       );
                     });
                   })()}
                 </svg>
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
                   <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)' }}>{totalBottlenecks}</span>
                   <span style={{ fontSize: 8, color: 'var(--text-muted)' }}>Found</span>
                 </div>
@@ -453,30 +495,78 @@ export const LiveWorkloadView: React.FC<LiveWorkloadViewProps> = ({ onNavigateTo
                 {metrics?.bottleneck_distribution && Object.entries(metrics.bottleneck_distribution).map(([type, count]) => {
                   const pct = Math.round((count / totalBottlenecks) * 100);
                   const friendly = friendlyBottleneckName(type);
+                  const isSelected = selectedBottleneck === type;
                   const color = type === 'SEQ_SCAN' || type === 'LARGE_SEQ_SCAN' ? 'var(--danger-text)' :
                     type === 'UNINDEXED_JOIN' || type === 'REPEATED_INNER_LOOP' ? 'var(--warning-text)' :
                     type === 'EXPENSIVE_SORT' ? '#7C3AED' : 'var(--brand-primary)';
                   return (
-                    <div key={type} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11 }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-secondary)' }}>
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: color }} />
-                        {friendly}
-                      </span>
-                      <strong className="font-mono">{count} ({pct}%)</strong>
+                    <div 
+                      key={type} 
+                      onClick={() => setSelectedBottleneck(prev => prev === type ? null : type)}
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between', 
+                        fontSize: 11,
+                        cursor: 'pointer',
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        backgroundColor: isSelected ? 'rgba(15, 118, 110, 0.08)' : 'transparent',
+                        outline: isSelected ? `1px solid ${color}` : 'none',
+                        transition: 'all 0.2s ease'
+                      }}
+                      title="Click to filter queries table below"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color }} />
+                        <span style={{ color: isSelected ? 'var(--brand-primary)' : 'var(--text-secondary)', fontWeight: isSelected ? 700 : 500 }}>{friendly}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <strong className="font-mono">{count}</strong>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>({pct}%)</span>
+                      </div>
                     </div>
                   );
                 })}
               </div>
             </div>
 
+            {selectedBottleneck && (
+              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', backgroundColor: 'rgba(15, 118, 110, 0.08)', borderRadius: 4, fontSize: 11 }}>
+                <span style={{ color: 'var(--brand-primary)', fontWeight: 600 }}>
+                  Filtering: {friendlyBottleneckName(selectedBottleneck)}
+                </span>
+                <button
+                  onClick={() => setSelectedBottleneck(null)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
+                >
+                  ✕ Clear
+                </button>
+              </div>
+            )}
+
             <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
               {metrics?.bottleneck_distribution && Object.entries(metrics.bottleneck_distribution).map(([type, count]) => {
                 const pct = Math.round((count / totalBottlenecks) * 100);
                 const friendly = friendlyBottleneckName(type);
+                const isSelected = selectedBottleneck === type;
                 return (
-                  <div key={type} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <div 
+                    key={type} 
+                    onClick={() => setSelectedBottleneck(prev => prev === type ? null : type)}
+                    style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      gap: 3, 
+                      cursor: 'pointer',
+                      padding: '4px 6px',
+                      borderRadius: 4,
+                      backgroundColor: isSelected ? 'rgba(15, 118, 110, 0.06)' : 'transparent',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
-                      <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{friendly}</span>
+                      <span style={{ fontWeight: isSelected ? 700 : 600, color: isSelected ? 'var(--brand-primary)' : 'var(--text-primary)' }}>{friendly}</span>
                       <span style={{ color: 'var(--text-muted)' }}>{pct}%</span>
                     </div>
                     <div style={{ width: '100%', height: 6, borderRadius: 3, backgroundColor: 'var(--bg-subtle)', overflow: 'hidden' }}>

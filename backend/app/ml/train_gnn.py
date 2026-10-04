@@ -119,7 +119,7 @@ def train_gnn_model(
     output_dir: Optional[Path] = None,
     model_version: str = "gnn_bottleneck_v1",
     dataset_version: str = "v1_synthetic",
-    epochs: int = 40,
+    epochs: int = 15,
     lr: float = 0.005,
     random_seed: Optional[int] = None,
 ) -> GNNEvaluationMetrics:

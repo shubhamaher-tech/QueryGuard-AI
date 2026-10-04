@@ -30,6 +30,7 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>('gnn_bottleneck_v2');
+  const [selectedClass, setSelectedClass] = useState<string | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -329,11 +330,10 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', gap: 16, padding: '10px 0' }}>
             {/* SVG Donut */}
             <div style={{ position: 'relative', width: 130, height: 130, flexShrink: 0 }}>
-              <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.9155"
+              <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%' }}>
+                {/* Background track */}
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   fill="none"
                   stroke="#E2E8F0"
                   strokeWidth="3.4"
@@ -352,20 +352,27 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
                     const pct = Math.max(0.8, rawPct);
                     const currentOffset = cumulativeOffset;
                     cumulativeOffset += rawPct;
+                    const isSelected = selectedClass === lbl;
+                    const color = palette[i % palette.length];
                     return (
-                      <circle
+                      <path
                         key={lbl}
-                        cx="18"
-                        cy="18"
-                        r="15.9155"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                         fill="none"
-                        stroke={palette[i % palette.length]}
-                        strokeWidth="3.6"
+                        stroke={color}
+                        strokeWidth={isSelected ? 4.8 : 3.6}
                         strokeDasharray={`${pct.toFixed(2)} ${(100 - pct).toFixed(2)}`}
                         strokeDashoffset={(-currentOffset).toFixed(2)}
                         strokeLinecap="butt"
-                        style={{ transition: 'stroke-dasharray 0.4s ease, stroke-dashoffset 0.4s ease' }}
-                      />
+                        opacity={selectedClass && !isSelected ? 0.45 : 1}
+                        style={{
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onClick={() => setSelectedClass(prev => prev === lbl ? null : lbl)}
+                      >
+                        <title>{`${lbl.replace('_BOTTLENECK', '')}: ${count} (${Math.round(rawPct)}%)`}</title>
+                      </path>
                     );
                   });
                 })()}
@@ -405,11 +412,27 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
                   const pct = Math.round((count / grandTotal) * 100);
                   const color = palette[i % palette.length];
                   const cleanLabel = lbl.replace('_BOTTLENECK', '').replace(/_/g, ' ');
+                  const isSelected = selectedClass === lbl;
                   return (
-                    <div key={lbl} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11 }}>
+                    <div 
+                      key={lbl} 
+                      onClick={() => setSelectedClass(prev => prev === lbl ? null : lbl)}
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between', 
+                        fontSize: 11,
+                        cursor: 'pointer',
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        backgroundColor: isSelected ? 'rgba(15, 118, 110, 0.08)' : 'transparent',
+                        outline: isSelected ? `1px solid ${color}` : 'none',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color }} />
-                        <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{cleanLabel}</span>
+                        <span style={{ color: isSelected ? 'var(--brand-primary)' : 'var(--text-secondary)', fontWeight: isSelected ? 700 : 500 }}>{cleanLabel}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{count}</span>
@@ -492,7 +515,7 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
               <div style={{ width: '100%', height: 130, padding: '4px 0' }}>
                 <svg viewBox="0 0 340 115" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
                   <defs>
-                    <linearGradient id="accGrad" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="modelInsightsAccGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#0F766E" stopOpacity="0.25" />
                       <stop offset="100%" stopColor="#0F766E" stopOpacity="0.0" />
                     </linearGradient>
@@ -517,7 +540,7 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
                   {/* Accuracy Area Fill down to baseline 90 */}
                   <polygon
                     points={`40,90 40,${ay1} 95,${ay10} 150,${ay20} 205,${ay30} 260,${ay40} 315,${ay50} 315,90`}
-                    fill="url(#accGrad)"
+                    fill="url(#modelInsightsAccGrad)"
                   />
 
                   {/* Accuracy Line */}
@@ -597,36 +620,54 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
                 </tr>
               </thead>
               <tbody>
-                {confusionMatrix.map((row, rIdx) => (
-                  <tr key={rIdx}>
-                    <td style={{ padding: '8px 10px', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'left' }}>
-                      {String(confusionLabels[rIdx] || `Class ${rIdx}`).replace('_BOTTLENECK', '')}
-                    </td>
-                    {Array.isArray(row) && row.map((val, cIdx) => {
-                      const isDiagonal = rIdx === cIdx;
-                      const bg = isDiagonal 
-                        ? (val > 20 ? 'rgba(34, 197, 94, 0.25)' : 'rgba(34, 197, 94, 0.15)') 
-                        : (val > 0 ? 'rgba(239, 68, 68, 0.18)' : 'var(--bg-subtle)');
-                      const textColor = isDiagonal ? 'var(--success-text)' : (val > 0 ? 'var(--danger-text)' : 'var(--text-muted)');
-                      return (
-                        <td 
-                          key={cIdx} 
-                          style={{
-                            padding: '10px 12px',
-                            backgroundColor: bg,
-                            border: '1px solid var(--border-default)',
-                            borderRadius: 4,
-                            fontWeight: isDiagonal ? 700 : 500,
-                            color: textColor
-                          }}
-                          className="font-mono"
-                        >
-                          {val}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                {confusionMatrix.map((row, rIdx) => {
+                  const label = String(confusionLabels[rIdx] || `Class ${rIdx}`);
+                  const isSelectedRow = selectedClass === label || selectedClass?.replace('_BOTTLENECK', '') === label.replace('_BOTTLENECK', '');
+                  return (
+                    <tr 
+                      key={rIdx} 
+                      onClick={() => setSelectedClass(prev => prev === label ? null : label)}
+                      style={{ 
+                        cursor: 'pointer',
+                        backgroundColor: isSelectedRow ? 'rgba(15, 118, 110, 0.08)' : 'transparent',
+                        transition: 'background-color 0.2s ease'
+                      }}
+                    >
+                      <td style={{ 
+                        padding: '8px 10px', 
+                        fontSize: 11, 
+                        fontWeight: isSelectedRow ? 800 : 600, 
+                        color: isSelectedRow ? 'var(--brand-primary)' : 'var(--text-secondary)', 
+                        textAlign: 'left' 
+                      }}>
+                        {label.replace('_BOTTLENECK', '')}
+                      </td>
+                      {Array.isArray(row) && row.map((val, cIdx) => {
+                        const isDiagonal = rIdx === cIdx;
+                        const bg = isDiagonal 
+                          ? (val > 20 ? 'rgba(34, 197, 94, 0.25)' : 'rgba(34, 197, 94, 0.15)') 
+                          : (val > 0 ? 'rgba(239, 68, 68, 0.18)' : 'var(--bg-subtle)');
+                        const textColor = isDiagonal ? 'var(--success-text)' : (val > 0 ? 'var(--danger-text)' : 'var(--text-muted)');
+                        return (
+                          <td 
+                            key={cIdx} 
+                            style={{
+                              padding: '10px 12px',
+                              backgroundColor: bg,
+                              border: isSelectedRow ? '1px solid var(--brand-primary)' : '1px solid var(--border-default)',
+                              borderRadius: 4,
+                              fontWeight: isDiagonal ? 700 : 500,
+                              color: textColor
+                            }}
+                            className="font-mono"
+                          >
+                            {val}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -655,26 +696,44 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {classMetrics.map((cm, idx) => (
-              <div key={idx} style={{ padding: '8px 12px', backgroundColor: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-default)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {cm.class_name.replace(/_/g, ' ')}
-                  </span>
-                  <span className="badge badge-brand font-mono" style={{ fontSize: 10 }}>
-                    F1: {(cm.f1_score * 100).toFixed(0)}%
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ flex: 1, height: 6, backgroundColor: 'var(--bg-surface-raised)', borderRadius: 3, overflow: 'hidden' }}>
-                    <div style={{ width: `${cm.f1_score * 100}%`, height: '100%', backgroundColor: 'var(--brand-primary-text)' }} />
+            {classMetrics.map((cm, idx) => {
+              const rawName = cm?.class_name || `Class ${idx}`;
+              const isSelected = selectedClass === rawName || selectedClass?.replace('_BOTTLENECK', '') === rawName.replace('_BOTTLENECK', '');
+              const f1 = cm?.f1_score != null ? cm.f1_score : 0;
+              const prec = cm?.precision != null ? cm.precision : 0;
+              const rec = cm?.recall != null ? cm.recall : 0;
+              return (
+                <div 
+                  key={idx} 
+                  onClick={() => setSelectedClass(prev => prev === rawName ? null : rawName)}
+                  style={{ 
+                    padding: '8px 12px', 
+                    backgroundColor: isSelected ? 'rgba(15, 118, 110, 0.08)' : 'var(--bg-subtle)', 
+                    borderRadius: 'var(--radius-sm)', 
+                    border: isSelected ? '2px solid var(--brand-primary)' : '1px solid var(--border-default)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: isSelected ? 800 : 600, color: isSelected ? 'var(--brand-primary)' : 'var(--text-primary)' }}>
+                      {rawName.replace(/_/g, ' ')}
+                    </span>
+                    <span className="badge badge-brand font-mono" style={{ fontSize: 10 }}>
+                      F1: {(f1 * 100).toFixed(0)}%
+                    </span>
                   </div>
-                  <span style={{ fontSize: 10, color: 'var(--text-muted)' }} className="font-mono">
-                    P: {(cm.precision * 100).toFixed(0)}% • R: {(cm.recall * 100).toFixed(0)}%
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ flex: 1, height: 6, backgroundColor: 'var(--bg-surface-raised)', borderRadius: 3, overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.min(100, Math.max(0, f1 * 100))}%`, height: '100%', backgroundColor: 'var(--brand-primary-text)' }} />
+                    </div>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)' }} className="font-mono">
+                      P: {(prec * 100).toFixed(0)}% • R: {(rec * 100).toFixed(0)}%
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Model Switcher */}
