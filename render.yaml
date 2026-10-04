@@ -17,14 +17,13 @@ services:
       - key: PROJECT_NAME
         value: "QueryGuard AI"
 
-  # QueryGuard React Frontend
+  # QueryGuard React Frontend (Static Site)
   - type: web
     name: queryguard-frontend
     runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
-    plan: free
     routes:
       - type: rewrite
         source: /*
