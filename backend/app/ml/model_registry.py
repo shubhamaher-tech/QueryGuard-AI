@@ -22,11 +22,13 @@ class GNNModelRegistry:
     def __init__(self, model_dir: Optional[Path] = None, dataset_dir: Optional[Path] = None):
         self.model_dir = model_dir or DEFAULT_MODEL_DIR
         self.dataset_dir = dataset_dir or DEFAULT_DATASET_DIR
-        self.model_version = "gnn_bottleneck_v1"
+        v2_path = self.model_dir / "gnn_bottleneck_v2.metadata.json"
+        self.model_version = "gnn_bottleneck_v2" if v2_path.exists() else "gnn_bottleneck_v1"
         self._model = None
         self._metadata: Optional[Dict[str, Any]] = None
         self.confidence_threshold = 0.65
         self._load_model()
+
 
     def _has_dependencies(self) -> bool:
         try:

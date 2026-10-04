@@ -262,9 +262,9 @@ export const api = {
     }
   },
 
-  async generateGnnDataset(): Promise<any> {
+  async generateGnnDataset(datasetVersion: string = 'v2_synthetic_tpch_postgres'): Promise<any> {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/ml/gnn/dataset/generate`, {
+      const res = await fetch(`${API_BASE_URL}/api/ml/gnn/dataset/generate?dataset_version=${encodeURIComponent(datasetVersion)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
@@ -272,13 +272,13 @@ export const api = {
       return await res.json();
     } catch (err) {
       console.error('[QueryGuard API] generateGnnDataset error:', err);
-      return { total_graphs_generated: 140, message: 'Offline mode: using cached dataset.' };
+      return { total_graphs_generated: 245, message: 'Offline mode: using cached dataset.' };
     }
   },
 
-  async trainGnnModel(): Promise<GNNEvaluationMetrics | null> {
+  async trainGnnModel(modelVersion: string = 'gnn_bottleneck_v2', datasetVersion: string = 'v2_synthetic_tpch_postgres'): Promise<GNNEvaluationMetrics | null> {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/ml/gnn/train`, {
+      const res = await fetch(`${API_BASE_URL}/api/ml/gnn/train?model_version=${encodeURIComponent(modelVersion)}&dataset_version=${encodeURIComponent(datasetVersion)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),

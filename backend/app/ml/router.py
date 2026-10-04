@@ -90,15 +90,16 @@ def train_gnn(
         )
 
 @router.get("/ml/gnn/evaluation", response_model=GNNEvaluationMetrics)
-def get_gnn_evaluation():
+def get_gnn_evaluation(model_version: Optional[str] = Query(None)):
     """Retrieve evaluation metrics and confusion matrix for the trained GNN model."""
-    eval_data = get_latest_evaluation()
+    eval_data = get_latest_evaluation(model_version=model_version or model_registry.model_version)
     if not eval_data:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No trained GNN model evaluation found. Please train the model first via POST /api/ml/gnn/train"
         )
     return eval_data
+
 
 @router.post("/telemetry/events/{event_id}/gnn-analyze", response_model=GNNInferenceResult)
 def analyze_telemetry_event_gnn(event_id: str, db: Session = Depends(get_db)):
@@ -201,12 +202,13 @@ def get_models_visual_summary():
     Visual summary of trained GNN models, evaluation metrics, confusion matrix,
     and class distribution.
     """
-    eval_data = get_latest_evaluation()
+    active_ver = model_registry.model_version
+    eval_data = get_latest_evaluation(model_version=active_ver)
     status_data = model_registry.get_status()
     models_list = model_registry.list_available_models()
 
     return {
-        "active_model": model_registry.model_version,
+        "active_model": active_ver,
         "is_available": model_registry.is_available(),
         "accuracy": eval_data.accuracy if eval_data else (status_data.accuracy or 0.946),
         "macro_f1": eval_data.macro_f1 if eval_data else (status_data.macro_f1 or 0.948),
@@ -218,3 +220,4 @@ def get_models_visual_summary():
         "label_distribution": status_data.label_distribution,
         "disclaimer": "GNN bottleneck classifier — experimental, trained only on synthetic & benchmark plan graphs."
     }
+
