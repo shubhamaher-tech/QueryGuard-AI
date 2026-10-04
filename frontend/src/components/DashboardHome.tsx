@@ -86,15 +86,22 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
     return () => { mounted = false; };
   }, []);
 
-  const topSlowQueries = [...queries].sort((a, b) => b.impactScore - a.impactScore);
-  const topQuery = topSlowQueries[0];
+  const isQueryActioned = (q: QueryEvent) => 
+    q.analysisStatus === ('RESOLVED' as any) || 
+    q.recommendations?.some(r => r.status === ('APPROVED' as any));
+
+  const activeSlowQueries = queries.filter(q => !isQueryActioned(q));
+  const resolvedQueries = queries.filter(q => isQueryActioned(q));
+
+  const topSlowQueries = [...activeSlowQueries].sort((a, b) => b.impactScore - a.impactScore);
+  const topQuery = topSlowQueries[0] || queries[0];
   const pendingRecommendations = recommendations.filter(r => r.status === 'VALIDATED');
   const approvedRecommendations = recommendations.filter(r => r.status === 'APPROVED');
   const rejectedRecommendations = recommendations.filter(r => r.status === 'REJECTED');
   const simulatedCount = recommendations.filter(r => r.simulation && r.simulation.status === 'COMPLETED').length;
 
-  // Real backend metrics with safe defaults
-  const slowQueriesCount = visualSummary?.kpis?.slow_queries?.value ?? topSlowQueries.length ?? 4;
+  // Real synchronized metric matching SlowQueriesView exactly:
+  const slowQueriesCount = activeSlowQueries.length;
   const criticalBottlenecks = visualSummary?.kpis?.critical_bottlenecks?.value ?? 3;
   const simulationsPassed = visualSummary?.kpis?.simulations_passed?.value ?? simulatedCount ?? 3;
   const pendingReviews = visualSummary?.kpis?.pending_reviews?.value ?? pendingRecommendations.length ?? 3;
@@ -301,13 +308,17 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600 }}>Slow Queries</span>
-            <span className="badge badge-danger" style={{ fontSize: 10, padding: '2px 7px' }}>Active</span>
+            <span className={slowQueriesCount > 0 ? "badge badge-danger" : "badge badge-success"} style={{ fontSize: 10, padding: '2px 7px' }}>
+              {slowQueriesCount > 0 ? "Active" : "All Tuned"}
+            </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
-            <span style={{ fontSize: 32, fontWeight: 800, color: 'var(--text-primary)' }} className="tabular-nums">
+            <span style={{ fontSize: 32, fontWeight: 800, color: slowQueriesCount > 0 ? 'var(--text-primary)' : 'var(--success-text)' }} className="tabular-nums">
               {slowQueriesCount}
             </span>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>queries &gt;250ms</span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              {slowQueriesCount === 0 ? 'all queries tuned in RAM' : 'queries >250ms'}
+            </span>
           </div>
           {/* Mini Sparkline Bar representation */}
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 18, marginTop: 8 }}>
@@ -1119,9 +1130,15 @@ export const DashboardHome: React.FC<DashboardHomeProps> = ({
                       </div>
                     </td>
                     <td>
-                      <span className="badge badge-success">
-                        Safe Simulation Passed
-                      </span>
+                      {isQueryActioned(q) ? (
+                        <span className="badge badge-success" style={{ backgroundColor: '#DCFCE7', color: '#166534', borderColor: '#BBF7D0' }}>
+                          ✓ Fix Accepted (RAM)
+                        </span>
+                      ) : (
+                        <span className="badge badge-neutral">
+                          Needs DBA Review
+                        </span>
+                      )}
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <button 

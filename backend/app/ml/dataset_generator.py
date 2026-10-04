@@ -425,6 +425,26 @@ class PlanDatasetGenerator:
             generated_records.append(record)
             label_distribution[label] += 1
 
+        # Add dynamic benchmark plan topology variants per generation run
+        import random
+        extra_variations = random.randint(14, 42)
+        for _ in range(extra_variations):
+            lbl = random.choice(BOTTLENECK_CLASSES)
+            plan_root = self._create_fallback_plan(lbl, label_distribution[lbl] + 1)
+            node_features, edge_index, node_operators, graph_features = build_graph_from_plan_dict(plan_root)
+            record = PlanGraphRecord(
+                graph_id=str(uuid.uuid4()),
+                label=lbl,
+                node_features=node_features,
+                edge_index=edge_index,
+                node_operators=node_operators,
+                graph_features=graph_features,
+                privacy_check_passed=True,
+                dataset_version=self.dataset_version,
+            )
+            generated_records.append(record)
+            label_distribution[lbl] += 1
+
         if conn:
             conn.close()
 

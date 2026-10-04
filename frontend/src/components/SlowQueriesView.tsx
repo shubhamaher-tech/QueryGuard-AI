@@ -21,12 +21,18 @@ export interface SlowQueriesViewProps {
   queries: QueryEvent[];
   onSelectQuery: (queryId: string) => void;
   onAcceptFix?: (queryId: string) => void;
+  onRevertFix?: (queryId: string) => void;
+  onAcceptAllFixes?: () => void;
+  onResetAllFixes?: () => void;
 }
 
 export const SlowQueriesView: React.FC<SlowQueriesViewProps> = ({ 
   queries, 
   onSelectQuery,
-  onAcceptFix 
+  onAcceptFix,
+  onRevertFix,
+  onAcceptAllFixes,
+  onResetAllFixes
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [bottleneckFilter, setBottleneckFilter] = useState<string>('ALL');
@@ -51,7 +57,7 @@ export const SlowQueriesView: React.FC<SlowQueriesViewProps> = ({
     e.stopPropagation();
     setActionedIds(prev => new Set(prev).add(q.id));
     onAcceptFix?.(q.id);
-    const newActiveCount = activeSlowQueries.length - 1;
+    const newActiveCount = Math.max(0, activeSlowQueries.length - 1);
     setActionMessage(`✓ Fix accepted for "${q.title}"! Candidate index simulated in session RAM. Active slow queries dropped to ${newActiveCount}.`);
   };
 
@@ -62,21 +68,26 @@ export const SlowQueriesView: React.FC<SlowQueriesViewProps> = ({
       next.delete(q.id);
       return next;
     });
+    onRevertFix?.(q.id);
     setActionMessage(`Reverted fix for "${q.title}".`);
   };
 
   const handleAcceptAll = () => {
-    const allIds = new Set(actionedIds);
-    queries.forEach(q => {
-      allIds.add(q.id);
-      onAcceptFix?.(q.id);
-    });
+    const allIds = new Set(queries.map(q => q.id));
     setActionedIds(allIds);
+    if (onAcceptAllFixes) {
+      onAcceptAllFixes();
+    } else {
+      queries.forEach(q => onAcceptFix?.(q.id));
+    }
     setActionMessage(`✓ All ${queries.length} recommended fixes accepted! Active slow queries reduced to 0.`);
   };
 
   const handleResetAll = () => {
     setActionedIds(new Set());
+    if (onResetAllFixes) {
+      onResetAllFixes();
+    }
     setActionMessage('Reset all slow query actions to initial baseline.');
   };
 

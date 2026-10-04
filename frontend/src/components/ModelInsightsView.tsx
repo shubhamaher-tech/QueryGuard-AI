@@ -336,7 +336,7 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
                   r="15.9155"
                   fill="none"
                   stroke="#E2E8F0"
-                  strokeWidth="3.2"
+                  strokeWidth="3.4"
                 />
                 {(() => {
                   const palette = ['#DC2626', '#D97706', '#0F766E', '#7C3AED', '#2563EB', '#059669', '#475569'];
@@ -346,11 +346,12 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
                     ? Object.entries(labelDist)
                     : confusionLabels.slice(0, 7).map((lbl, i) => [lbl, confusionMatrix[i]?.reduce((a, b) => a + b, 0) || 35]);
                   const grandTotal = distEntries.reduce((acc, curr) => acc + curr[1], 0) || datasetSize;
-                  let offset = 0;
+                  let cumulativeOffset = 0;
                   return distEntries.map(([lbl, count], i) => {
-                    const pct = Math.max(1, Math.round((count / grandTotal) * 100));
-                    const currentOffset = offset;
-                    offset += pct;
+                    const rawPct = (count / grandTotal) * 100;
+                    const pct = Math.max(0.8, rawPct);
+                    const currentOffset = cumulativeOffset;
+                    cumulativeOffset += rawPct;
                     return (
                       <circle
                         key={lbl}
@@ -359,11 +360,11 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
                         r="15.9155"
                         fill="none"
                         stroke={palette[i % palette.length]}
-                        strokeWidth="3.4"
-                        strokeDasharray={`${pct}, 100`}
-                        strokeDashoffset={-currentOffset}
-                        strokeLinecap="round"
-                        style={{ transition: 'stroke-dasharray 0.3s ease' }}
+                        strokeWidth="3.6"
+                        strokeDasharray={`${pct.toFixed(2)} ${(100 - pct).toFixed(2)}`}
+                        strokeDashoffset={(-currentOffset).toFixed(2)}
+                        strokeLinecap="butt"
+                        style={{ transition: 'stroke-dasharray 0.4s ease, stroke-dashoffset 0.4s ease' }}
                       />
                     );
                   });
@@ -391,7 +392,7 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
             </div>
 
             {/* Legend Breakdown */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, maxHeight: 140, overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
               {(() => {
                 const palette = ['#DC2626', '#D97706', '#0F766E', '#7C3AED', '#2563EB', '#059669', '#475569'];
                 const labelDist: Record<string, number> = (visualSummary as any)?.label_distribution || {};
@@ -434,7 +435,8 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
           const a40 = Math.max(85, Math.min(98, finalAcc - 1.5));
           const a50 = finalAcc;
 
-          const accY = (v: number) => (92 - ((Math.max(40, Math.min(100, v)) - 40) / 60) * 76).toFixed(1);
+          // Scale: 40% to 100% -> Y=90 (40%) to Y=18 (100%)
+          const accY = (v: number) => (90 - ((Math.max(40, Math.min(100, v)) - 40) / 60) * 72).toFixed(1);
           const ay1 = accY(a1);
           const ay10 = accY(a10);
           const ay20 = accY(a20);
@@ -449,7 +451,8 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
           const l40 = Math.min(0.35, finalLoss + 0.03);
           const l50 = finalLoss;
 
-          const lossY = (v: number) => (85 - (Math.max(0, Math.min(1.0, v)) / 1.0) * 67).toFixed(1);
+          // Loss: 0.0 to 1.0 -> Y=90 (0.0) to Y=18 (1.0)
+          const lossY = (v: number) => (90 - Math.min(1.0, Math.max(0, v)) * 72).toFixed(1);
           const ly1 = lossY(l1);
           const ly10 = lossY(l10);
           const ly20 = lossY(l20);
@@ -487,7 +490,7 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
 
               {/* SVG Line / Area Graph */}
               <div style={{ width: '100%', height: 130, padding: '4px 0' }}>
-                <svg viewBox="0 0 320 110" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+                <svg viewBox="0 0 340 115" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
                   <defs>
                     <linearGradient id="accGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#0F766E" stopOpacity="0.25" />
@@ -495,35 +498,41 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
                     </linearGradient>
                   </defs>
 
-                  {/* Grid lines */}
-                  <line x1="25" y1="15" x2="310" y2="15" stroke="#E2E8F0" strokeDasharray="2,2" strokeWidth="0.8" />
-                  <line x1="25" y1="50" x2="310" y2="50" stroke="#E2E8F0" strokeDasharray="2,2" strokeWidth="0.8" />
-                  <line x1="25" y1="85" x2="310" y2="85" stroke="#E2E8F0" strokeWidth="0.8" />
+                  {/* Grid lines aligned to exact pixel calculations */}
+                  <line x1="30" y1="18" x2="315" y2="18" stroke="#E2E8F0" strokeDasharray="2,2" strokeWidth="0.8" />
+                  <line x1="30" y1="42" x2="315" y2="42" stroke="#E2E8F0" strokeDasharray="2,2" strokeWidth="0.8" />
+                  <line x1="30" y1="66" x2="315" y2="66" stroke="#E2E8F0" strokeDasharray="2,2" strokeWidth="0.8" />
+                  <line x1="30" y1="90" x2="315" y2="90" stroke="#CBD5E1" strokeWidth="1" />
 
-                  {/* Y Axis labels */}
-                  <text x="18" y="18" fontSize="8" fill="#94A3B8" textAnchor="end">100%</text>
-                  <text x="18" y="53" fontSize="8" fill="#94A3B8" textAnchor="end">80%</text>
-                  <text x="18" y="88" fontSize="8" fill="#94A3B8" textAnchor="end">60%</text>
+                  {/* Y Axis labels (Accuracy on left, Loss on right) */}
+                  <text x="24" y="21" fontSize="8" fill="#94A3B8" textAnchor="end">100%</text>
+                  <text x="24" y="45" fontSize="8" fill="#94A3B8" textAnchor="end">80%</text>
+                  <text x="24" y="69" fontSize="8" fill="#94A3B8" textAnchor="end">60%</text>
+                  <text x="24" y="93" fontSize="8" fill="#94A3B8" textAnchor="end">40%</text>
 
-                  {/* Accuracy Area Fill */}
+                  <text x="322" y="21" fontSize="8" fill="#DC2626" textAnchor="start">1.0</text>
+                  <text x="322" y="57" fontSize="8" fill="#DC2626" textAnchor="start">0.5</text>
+                  <text x="322" y="93" fontSize="8" fill="#DC2626" textAnchor="start">0.0</text>
+
+                  {/* Accuracy Area Fill down to baseline 90 */}
                   <polygon
-                    points={`30,85 30,${ay1} 85,${ay10} 140,${ay20} 195,${ay30} 250,${ay40} 305,${ay50} 305,85`}
+                    points={`40,90 40,${ay1} 95,${ay10} 150,${ay20} 205,${ay30} 260,${ay40} 315,${ay50} 315,90`}
                     fill="url(#accGrad)"
                   />
 
                   {/* Accuracy Line */}
                   <polyline
-                    points={`30,${ay1} 85,${ay10} 140,${ay20} 195,${ay30} 250,${ay40} 305,${ay50}`}
+                    points={`40,${ay1} 95,${ay10} 150,${ay20} 205,${ay30} 260,${ay40} 315,${ay50}`}
                     fill="none"
                     stroke="#0F766E"
-                    strokeWidth="2.2"
+                    strokeWidth="2.4"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
 
                   {/* Loss Line */}
                   <polyline
-                    points={`30,${ly1} 85,${ly10} 140,${ly20} 195,${ly30} 250,${ly40} 305,${ly50}`}
+                    points={`40,${ly1} 95,${ly10} 150,${ly20} 205,${ly30} 260,${ly40} 315,${ly50}`}
                     fill="none"
                     stroke="#DC2626"
                     strokeWidth="1.8"
@@ -532,17 +541,24 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
                     strokeLinejoin="round"
                   />
 
-                  {/* Final data point dots */}
-                  <circle cx="305" cy={ay50} r="3.5" fill="#0F766E" stroke="#FFFFFF" strokeWidth="1.5" />
-                  <circle cx="305" cy={ly50} r="3.5" fill="#DC2626" stroke="#FFFFFF" strokeWidth="1.5" />
+                  {/* Dots for Accuracy points */}
+                  <circle cx="40" cy={ay1} r="2.5" fill="#0F766E" />
+                  <circle cx="95" cy={ay10} r="2.5" fill="#0F766E" />
+                  <circle cx="150" cy={ay20} r="2.5" fill="#0F766E" />
+                  <circle cx="205" cy={ay30} r="2.5" fill="#0F766E" />
+                  <circle cx="260" cy={ay40} r="2.5" fill="#0F766E" />
+                  <circle cx="315" cy={ay50} r="4.0" fill="#0F766E" stroke="#FFFFFF" strokeWidth="1.5" />
+
+                  {/* Dots for Loss points */}
+                  <circle cx="315" cy={ly50} r="4.0" fill="#DC2626" stroke="#FFFFFF" strokeWidth="1.5" />
 
                   {/* X Axis labels */}
-                  <text x="30" y="98" fontSize="8" fill="#94A3B8" textAnchor="middle">Ep 1</text>
-                  <text x="85" y="98" fontSize="8" fill="#94A3B8" textAnchor="middle">Ep 10</text>
-                  <text x="140" y="98" fontSize="8" fill="#94A3B8" textAnchor="middle">Ep 20</text>
-                  <text x="195" y="98" fontSize="8" fill="#94A3B8" textAnchor="middle">Ep 30</text>
-                  <text x="250" y="98" fontSize="8" fill="#94A3B8" textAnchor="middle">Ep 40</text>
-                  <text x="305" y="98" fontSize="8" fill="#94A3B8" textAnchor="middle">Ep 50</text>
+                  <text x="40" y="103" fontSize="8" fill="#94A3B8" textAnchor="middle">Ep 1</text>
+                  <text x="95" y="103" fontSize="8" fill="#94A3B8" textAnchor="middle">Ep 10</text>
+                  <text x="150" y="103" fontSize="8" fill="#94A3B8" textAnchor="middle">Ep 20</text>
+                  <text x="205" y="103" fontSize="8" fill="#94A3B8" textAnchor="middle">Ep 30</text>
+                  <text x="260" y="103" fontSize="8" fill="#94A3B8" textAnchor="middle">Ep 40</text>
+                  <text x="315" y="103" fontSize="8" fill="#94A3B8" textAnchor="middle">Ep 50</text>
                 </svg>
               </div>
             </div>

@@ -369,14 +369,53 @@ export function App() {
                             resolvedAt: new Date().toISOString(),
                             resolvedBy: currentUser.id
                           }))
-
                         };
                       }
                       return q;
                     }));
                   }}
+                  onRevertFix={(queryId) => {
+                    setQueries(prev => prev.map(q => {
+                      if (q.id === queryId) {
+                        return {
+                          ...q,
+                          analysisStatus: 'ANALYZED' as any,
+                          recommendations: q.recommendations.map(r => ({
+                            ...r,
+                            status: 'VALIDATED' as any,
+                            resolvedAt: undefined,
+                            resolvedBy: undefined
+                          }))
+                        };
+                      }
+                      return q;
+                    }));
+                  }}
+                  onAcceptAllFixes={() => {
+                    setQueries(prev => prev.map(q => ({
+                      ...q,
+                      analysisStatus: 'RESOLVED' as any,
+                      recommendations: q.recommendations.map(r => ({
+                        ...r,
+                        status: 'APPROVED' as any,
+                        resolvedAt: new Date().toISOString(),
+                        resolvedBy: currentUser.id
+                      }))
+                    })));
+                  }}
+                  onResetAllFixes={() => {
+                    setQueries(prev => prev.map(q => ({
+                      ...q,
+                      analysisStatus: 'ANALYZED' as any,
+                      recommendations: q.recommendations.map(r => ({
+                        ...r,
+                        status: 'VALIDATED' as any,
+                        resolvedAt: undefined,
+                        resolvedBy: undefined
+                      }))
+                    })));
+                  }}
                 />
-
               )
             )}
 
