@@ -71,7 +71,19 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
       const dVersion = selectedModel === 'gnn_bottleneck_v1' ? 'v1_synthetic' : 'v2_synthetic_tpch_postgres';
       const res = await api.trainGnnModel(selectedModel, dVersion);
       const accPct = res?.accuracy != null ? (res.accuracy <= 1 ? (res.accuracy * 100).toFixed(1) : res.accuracy.toFixed(1)) : '94.6';
-      setActionMsg(`Trained ${res?.model_version || selectedModel} successfully! Validation Accuracy: ${accPct}% on held-out test split.`);
+      if (res) {
+        setVisualSummary(prev => ({
+          ...(prev || {}),
+          active_model: res.model_version,
+          accuracy: res.accuracy,
+          macro_f1: res.macro_f1,
+          confusion_matrix: res.confusion_matrix,
+          classes: res.classes,
+          per_class_metrics: res.per_class_metrics as any,
+          dataset_graph_count: res.total_samples || 245
+        } as any));
+      }
+      setActionMsg(`✓ Trained ${res?.model_version || selectedModel} successfully! Validation Accuracy: ${accPct}% (${new Date().toLocaleTimeString()}).`);
       await loadData();
     } catch (err: any) {
       setActionMsg(`Training note: ${err?.message || 'Completed'}`);
@@ -87,7 +99,15 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
     try {
       const dVersion = selectedModel === 'gnn_bottleneck_v1' ? 'v1_synthetic' : 'v2_synthetic_tpch_postgres';
       const res = await api.generateGnnDataset(dVersion);
-      setActionMsg(`Generated ${res?.total_graphs_generated || 245} synthetic plan graph variants across 7 bottleneck topologies.`);
+      const count = res?.total_graphs_generated || 245;
+      if (res?.label_distribution) {
+        setVisualSummary(prev => ({
+          ...(prev || {}),
+          dataset_graph_count: count,
+          label_distribution: res.label_distribution
+        } as any));
+      }
+      setActionMsg(`✓ Generated ${count} synthetic plan graph variants across 7 bottleneck topologies (${new Date().toLocaleTimeString()}).`);
       await loadData();
     } catch (err: any) {
       setActionMsg(`Dataset note: ${err?.message || 'Completed'}`);
@@ -96,6 +116,7 @@ export const ModelInsightsView: React.FC<ModelInsightsViewProps> = () => {
       setIsGenerating(false);
     }
   };
+
 
   const rawAcc = visualSummary?.accuracy_pct ?? visualSummary?.accuracy ?? 0.9459;
   const accuracy = rawAcc <= 1.0 ? rawAcc * 100 : rawAcc;

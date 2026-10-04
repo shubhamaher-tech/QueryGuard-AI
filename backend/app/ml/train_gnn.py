@@ -121,7 +121,7 @@ def train_gnn_model(
     dataset_version: str = "v1_synthetic",
     epochs: int = 40,
     lr: float = 0.005,
-    random_seed: int = 42,
+    random_seed: Optional[int] = None,
 ) -> GNNEvaluationMetrics:
     """
     Train PlanGNNClassifier on sanitized plan dataset and persist artifacts.
@@ -130,8 +130,10 @@ def train_gnn_model(
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support, confusion_matrix
 
-    torch.manual_seed(random_seed)
-    np.random.seed(random_seed)
+    actual_seed = random_seed if random_seed is not None else (int(datetime.datetime.utcnow().timestamp()) % 1000 + 7)
+    torch.manual_seed(actual_seed)
+    np.random.seed(actual_seed)
+
 
     dataset_file = dataset_path or DEFAULT_DATASET_PATH
     out_dir = output_dir or DEFAULT_MODEL_DIR
@@ -245,7 +247,7 @@ def train_gnn_model(
         confusion_matrix=conf_mat,
         classes=BOTTLENECK_CLASSES,
         trained_at=datetime.datetime.utcnow().isoformat() + "Z",
-        random_seed=random_seed,
+        random_seed=actual_seed,
     )
 
     # Save model checkpoint

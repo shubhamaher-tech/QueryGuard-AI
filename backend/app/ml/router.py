@@ -52,7 +52,7 @@ def select_gnn_model(model_version: str = Query(..., description="Model version 
     }
 
 @router.post("/ml/gnn/dataset/generate", response_model=DatasetGenerationResult)
-def generate_dataset(dataset_version: str = Query("v1_synthetic", description="Dataset version ('v1_synthetic' or 'v2_synthetic_tpch_postgres')")):
+def generate_dataset(dataset_version: str = Query("v2_synthetic_tpch_postgres", description="Dataset version ('v1_synthetic' or 'v2_synthetic_tpch_postgres')")):
     """Generate synthetic sanitized execution plan graph dataset."""
     try:
         result = dataset_generator.generate_dataset(dataset_version=dataset_version)
@@ -67,8 +67,8 @@ def generate_dataset(dataset_version: str = Query("v1_synthetic", description="D
 
 @router.post("/ml/gnn/train", response_model=GNNEvaluationMetrics)
 def train_gnn(
-    model_version: str = Query("gnn_bottleneck_v1", description="Model version name (e.g. gnn_bottleneck_v1, gnn_bottleneck_v2)"),
-    dataset_version: str = Query("v1_synthetic", description="Dataset version (e.g. v1_synthetic, v2_synthetic_tpch_postgres)"),
+    model_version: str = Query("gnn_bottleneck_v2", description="Model version name (e.g. gnn_bottleneck_v1, gnn_bottleneck_v2)"),
+    dataset_version: str = Query("v2_synthetic_tpch_postgres", description="Dataset version (e.g. v1_synthetic, v2_synthetic_tpch_postgres)"),
 ):
     """Train experimental GNN classifier on local synthetic benchmark plans."""
     if not model_registry._has_dependencies():
@@ -80,6 +80,7 @@ def train_gnn(
     try:
         from app.ml.train_gnn import train_gnn_model
         metrics = train_gnn_model(model_version=model_version, dataset_version=dataset_version)
+        model_registry.set_active_model(model_version)
         model_registry.reload()
         return metrics
     except Exception as e:

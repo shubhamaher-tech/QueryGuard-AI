@@ -357,7 +357,26 @@ export function App() {
                 <SlowQueriesView
                   queries={queries}
                   onSelectQuery={handleSelectQuery}
+                  onAcceptFix={(queryId) => {
+                    setQueries(prev => prev.map(q => {
+                      if (q.id === queryId) {
+                        return {
+                          ...q,
+                          analysisStatus: 'RESOLVED' as any,
+                          recommendations: q.recommendations.map(r => ({
+                            ...r,
+                            status: 'APPROVED' as any,
+                            resolvedAt: new Date().toISOString(),
+                            resolvedBy: currentUser.id
+                          }))
+
+                        };
+                      }
+                      return q;
+                    }));
+                  }}
                 />
+
               )
             )}
 
