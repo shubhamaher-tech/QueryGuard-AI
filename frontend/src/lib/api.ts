@@ -381,6 +381,20 @@ export const api = {
     return await res.json();
   },
 
+  async executeEnhancedQuery(analysisId: string, query?: string, candidateIndexDdl?: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/api/analyze-query/${encodeURIComponent(analysisId)}/execute-enhanced`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, candidate_index_ddl: candidateIndexDdl }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Execution failed: ${res.statusText}`);
+    }
+    return await res.json();
+  },
+
+
   // Realtime Telemetry
   async fetchRealtimeStatus(): Promise<any> {
     const res = await fetch(`${API_BASE_URL}/api/realtime/status`);

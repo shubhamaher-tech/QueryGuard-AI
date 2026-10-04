@@ -61,6 +61,29 @@ class SimulateAnalysisRequest(BaseModel):
     candidate_index_ddl: Optional[str] = None
 
 
+class ExecuteEnhancedRequest(BaseModel):
+    query: Optional[str] = None
+    candidate_index_ddl: Optional[str] = None
+
+
+class EnhancedExecutionResponse(BaseModel):
+    status: str = "SUCCESS"
+    analysis_id: str
+    enhanced_sql: str
+    original_cost: float
+    enhanced_cost: float
+    cost_reduction_pct: float
+    baseline_latency_ms: float
+    enhanced_latency_ms: float
+    operator_before: str
+    operator_after: str
+    virtual_index: str
+    zero_disk_verified: bool = True
+    message: str
+    plan_nodes_enhanced: Optional[List[Dict[str, Any]]] = None
+
+
+
 class ApproveAnalysisRequest(BaseModel):
     decision: str = Field(..., description="APPROVED or REJECTED")
     reason: Optional[str] = Field(default=None, description="DBA rationale or review comment")

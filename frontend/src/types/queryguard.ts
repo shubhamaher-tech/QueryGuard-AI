@@ -326,6 +326,44 @@ export interface AnalysisJob {
     cost_reduction_estimate?: string;
     confidence_score?: number;
     honesty_label?: string;
+    detailed_explanation?: string;
+    rule_explanation?: string;
+    gnn_explanation?: string;
+    consensus?: {
+      rule_verdict?: string;
+      gnn_verdict?: string;
+      status?: string;
+      confidence?: number;
+      alignment_score?: string;
+    };
+    operator_impacts?: Array<{
+      node_uid: string;
+      operator_type: string;
+      relation_token?: string;
+      cost: number;
+      cost_pct: number;
+      latency_ms: number;
+      is_bottleneck: boolean;
+    }>;
+    metric_impacts?: {
+      io_pages_baseline: number;
+      io_pages_optimized: number;
+      io_pages_reduction_pct: number;
+      rows_scanned_baseline: number;
+      rows_scanned_optimized: number;
+      rows_reduction_pct: number;
+      cost_baseline: number;
+      cost_optimized: number;
+      cost_reduction_pct: number;
+      latency_baseline_ms: number;
+      latency_optimized_ms: number;
+      latency_reduction_pct: number;
+    };
+    gnn_feature_importance?: Array<{
+      feature: string;
+      weight: number;
+      description: string;
+    }>;
   };
   gnn_prediction?: GNNInferenceResult;
   recommendations?: Array<{

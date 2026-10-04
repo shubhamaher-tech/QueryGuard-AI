@@ -15,6 +15,8 @@ from app.analysis.schemas import (
     AnalysisJobResponse,
     SimulateAnalysisRequest,
     ApproveAnalysisRequest,
+    ExecuteEnhancedRequest,
+    EnhancedExecutionResponse,
     BenchmarkStatusResponse,
     SampleQueryItem,
 )
@@ -154,6 +156,28 @@ def reject_analysis_endpoint(
         return AnalysisService.approve_or_reject_analysis(analysis_id, payload, db=db)
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ve))
+
+
+@router.post(
+    "/analyze-query/{analysis_id}/execute-enhanced",
+    response_model=EnhancedExecutionResponse,
+    summary="Execute or verify enhanced query in sandbox with virtual index",
+)
+def execute_enhanced_query_endpoint(
+    analysis_id: str,
+    payload: ExecuteEnhancedRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Executes the enhanced query against the sandbox environment with
+    HypoPG virtual index active in session memory. Zero physical disk writes.
+    """
+    try:
+        return AnalysisService.execute_enhanced_query(analysis_id, payload, db=db)
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Execution failed: {str(e)}")
 
 
 @router.get(
